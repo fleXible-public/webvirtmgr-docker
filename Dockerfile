@@ -39,7 +39,6 @@ ADD bootstrap.sh /webvirtmgr/bootstrap.sh
 
 RUN groupadd webvirtmgr -g 1010
 RUN useradd webvirtmgr -g webvirtmgr -u 1010 -d /data -s /sbin/nologin
-# RUN useradd webvirtmgr -g libvirtd -u 1010 -d /data -s /sbin/nologin
 RUN chown webvirtmgr:webvirtmgr -R /webvirtmgr
 
 WORKDIR /data
