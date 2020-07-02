@@ -1,24 +1,70 @@
 
-## Webvirtmgr Dockerfile
+# Webvirtmgr Dockerfile
 
 1. Install [Docker](https://www.docker.com/).
 
 2. Pull the image from Docker Hub
+  * webvirtmgr version used: `v4.8.9`
 
+3. Create volume for data
 ```
-$ docker pull primiano/docker-webvirtmgr
-$ sudo groupadd -g 1010 webvirtmgr
-$ sudo useradd -u 1010 -g webvirtmgr -s /sbin/nologin -d /data/vm webvirtmgr
-$ sudo chown -R webvirtmgr:webvirtmgr /data/vm
-```
-
-### Usage
-
-```
-$ docker run -d -p 8080:8080 -p 6080:6080 --name webvirtmgr -v /data/vm:/data/vm primiano/docker-webvirtmgr
+$ docker pull flexible1983/webvirtmgr-docker
+$ docker volume create webvirtmgr-data
 ```
 
-### libvirtd configuration on the host
+## Usage
+
+```
+$ docker run -d \
+  -p 8080:8080 -p 6080:6080 \
+  -v webvirtmgr-data:/data \
+  --name webvirtmgr \
+  flexible1983/webvirtmgr-docker
+```
+
+To use local socket for libvirtd, bind mount the socket and set `GID_LIBVIRTD` to
+gid of the group. 
+
+```
+$ LIBVIRTD_SOCK=/var/run/libvirt/libvirt-sock && \
+  docker run -d \
+  -p 8080:8080 -p 6080:6080 \
+  -v webvirtmgr-data:/data \
+  -v "$LIBVIRTD_SOCK":/var/run/libvirt/libvirt-sock \
+  -e GID_LIBVIRTD="$(stat -c %g $LIBVIRTD_SOCK)" \
+  --name webvirtmgr \
+  flexible1983/webvirtmgr-docker
+```
+
+## Container configuration
+
+### libvirtd Group-ID
+**Name:** `GID_LIBVIRTD`  
+**Type:** Integer  
+**Default:** Unset  
+**Example:** `-e GID_LIBVIRTD=108`
+
+This added the docker user in the container to a group with this id.  
+Should be group id of libvirt-sock.  
+You can use this helper  `-e GID_LIBVIRTD="$(stat -c %g /path/to/libvirt-sock)"`.
+
+## libvirtd configuration on the host
+
+### Local Socket
+
+No special changes are necessary.
+
+### SSH connection
+
+Follow official (Setup-SSH-Authorization)[https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization] 
+guide and put the resulting `.ssh` directory in your data volume.
+
+```
+$ export DATA=$(docker volume inspect webvirtmgr-data | jq ".[]|.Mountpoint")
+$ cp -rv .ssh $DATA
+```
+
+### TCP connection
 
 ```
 $ cat /etc/default/libvirt-bin

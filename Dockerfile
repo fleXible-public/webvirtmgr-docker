@@ -1,13 +1,33 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 MAINTAINER Primiano Tucci <p.tucci@gmail.com>
 
-RUN apt-get -y update && \
-    apt-get -y install git python-pip python-libvirt python-libxml2 supervisor novnc
+# Env
+ENV DEBIAN_FRONTEND noninteractive
+ENV TERM linux
+ENV TZ Europe/Berlin
 
+# Install dependencies
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    git \
+    python-pip \
+    python-libvirt \
+    python-libxml2 \
+    supervisor \
+    novnc \
+  ; \
+  apt-get upgrade -y; \
+  apt-get clean;
+
+# Install webvirtmgr
 RUN git clone https://github.com/retspen/webvirtmgr /webvirtmgr
 WORKDIR /webvirtmgr
-RUN git checkout 7f140f99f4 #v4.8.8
-RUN pip install -r requirements.txt
+RUN git checkout 7f140f99f4 #v4.8.9
+RUN \
+  pip install --upgrade pip && \
+  pip install setuptools wheel && \
+  pip install -r requirements.txt
 ADD local_settings.py /webvirtmgr/webvirtmgr/local/local_settings.py
 RUN sed -i 's/0.0.0.0/172.17.42.1/g' vrtManager/create.py
 RUN /usr/bin/python /webvirtmgr/manage.py collectstatic --noinput
@@ -17,13 +37,12 @@ ADD gunicorn.conf.py /webvirtmgr/conf/gunicorn.conf.py
 
 ADD bootstrap.sh /webvirtmgr/bootstrap.sh
 
-RUN useradd webvirtmgr -g libvirtd -u 1010 -d /data/vm/ -s /sbin/nologin
-RUN chown webvirtmgr:libvirtd -R /webvirtmgr
+RUN groupadd webvirtmgr -g 1010
+RUN useradd webvirtmgr -g webvirtmgr -u 1010 -d /data -s /sbin/nologin
+RUN chown webvirtmgr:webvirtmgr -R /webvirtmgr
 
-RUN apt-get -ys clean
-
-WORKDIR /
-VOLUME /data/vm
+WORKDIR /data
+VOLUME /data
 
 EXPOSE 8080
 EXPOSE 6080
