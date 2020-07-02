@@ -42,8 +42,8 @@ RUN useradd webvirtmgr -g webvirtmgr -u 1010 -d /data -s /sbin/nologin
 # RUN useradd webvirtmgr -g libvirtd -u 1010 -d /data -s /sbin/nologin
 RUN chown webvirtmgr:webvirtmgr -R /webvirtmgr
 
-WORKDIR /
-VOLUME /data/vm
+WORKDIR /data
+VOLUME /data
 
 EXPOSE 8080
 EXPOSE 6080
