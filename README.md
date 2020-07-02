@@ -54,6 +54,16 @@ You can use this helper  `-e GID_LIBVIRTD="$(stat -c %g /path/to/libvirt-sock)"`
 
 No special changes are necessary.
 
+### SSH connection
+
+Follow official (Setup-SSH-Authorization)[https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization] 
+guide and put the resulting `.ssh` directory in your data volume.
+
+```
+$ export DATA=$(docker volume inspect webvirtmgr-data | jq ".[]|.Mountpoint")
+$ cp -rv .ssh $DATA
+```
+
 ### TCP connection
 
 ```

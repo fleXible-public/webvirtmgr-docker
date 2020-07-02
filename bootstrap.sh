@@ -15,5 +15,9 @@ if [[ ! -f "/data/webvirtmgr.sqlite3" ]]; then
   echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@localhost', '1234')" | /usr/bin/python /webvirtmgr/manage.py shell
 fi
 
+if [[ -d "/data/.ssh" ]]; then
+  chown -R webvirtmgr.webvirtmgr "/data/.ssh"
+fi
+
 supervisorctl start webvirtmgr
 supervisorctl start webvirtmgr-console
