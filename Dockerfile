@@ -23,7 +23,7 @@ RUN \
 # Install webvirtmgr
 RUN git clone https://github.com/retspen/webvirtmgr /webvirtmgr
 WORKDIR /webvirtmgr
-RUN git checkout 7f140f99f4 #v4.8.8
+RUN git checkout 7f140f99f4 #v4.8.9
 RUN \
   pip install --upgrade pip && \
   pip install setuptools wheel && \

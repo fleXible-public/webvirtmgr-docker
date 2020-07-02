@@ -4,6 +4,7 @@
 1. Install [Docker](https://www.docker.com/).
 
 2. Pull the image from Docker Hub
+  * webvirtmgr version used: `v4.8.9`
 
 3. Create volume for data
 ```
