@@ -1,23 +1,19 @@
-#!/bin/bash -x
-
+#!/bin/bash
 set -o errexit    # exit on error
 set -o pipefail   # exit on error in pipe
+set -o nounset    # exit on undefined variable
 
-if [[ -n $GID_LIBVIRTD ]]; then
-  if ! getent group $GID_LIBVIRTD; then
-    groupadd --system --gid $GID_LIBVIRTD libvirtd
+if [[ -S "/var/run/libvirt/libvirt-sock" ]]; then
+  read -r gid group < <(stat -c "%g %G" "/var/run/libvirt/libvirt-sock")
+  if [[ $group != "libvirtd" ]]; then
+    echo "Found mounted libvirt-sock, assigning groupid $gid to webvirtmgr"
+    groupadd --system --gid "$gid" --non-unique libvirtd
+    usermod --append --groups libvirtd webvirtmgr
   fi
-  usermod --append --groups $GID_LIBVIRTD webvirtmgr
 fi
 
-if [[ ! -f "/data/webvirtmgr.sqlite3" ]]; then
-  /usr/bin/python /webvirtmgr/manage.py syncdb --noinput
-  echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@localhost', '1234')" | /usr/bin/python /webvirtmgr/manage.py shell
-fi
+echo "Changing ownership of /data to webvirtmgr.nogroup"
+chown -R webvirtmgr:nogroup "/data"
 
-if [[ -d "/data/.ssh" ]]; then
-  chown -R webvirtmgr.webvirtmgr "/data/.ssh"
-fi
-
-supervisorctl start webvirtmgr
-supervisorctl start webvirtmgr-console
+echo "Starting supervisord..."
+exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf -n
