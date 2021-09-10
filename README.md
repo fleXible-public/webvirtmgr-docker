@@ -1,12 +1,11 @@
 
 # Webvirtmgr Dockerfile
 
-1. Install [Docker](https://www.docker.com/).
+* webvirtmgr version: `v4.8.9`
 
+1. Install [Docker](https://www.docker.com/)
 2. Pull the image from Docker Hub
-  * webvirtmgr version used: `v4.8.9`
-
-3. Create volume for data
+3. Create volume for persistent data
 ```
 $ docker pull flexible1983/webvirtmgr-docker
 $ docker volume create webvirtmgr-data
@@ -16,37 +15,29 @@ $ docker volume create webvirtmgr-data
 
 ```
 $ docker run -d \
-  -p 8080:8080 -p 6080:6080 \
+  -p 8080:8080 \
+  -p 6080:6080 \
   -v webvirtmgr-data:/data \
   --name webvirtmgr \
   flexible1983/webvirtmgr-docker
 ```
 
-To use local socket for libvirtd, bind mount the socket and set `GID_LIBVIRTD` to
-gid of the group. 
+To use local socket for libvirtd, bind mount the socket to `/var/run/libvirt/libvirt-sock`.
 
 ```
-$ LIBVIRTD_SOCK=/var/run/libvirt/libvirt-sock && \
-  docker run -d \
-  -p 8080:8080 -p 6080:6080 \
+$ docker run -d \
+  -p 8080:8080 \
+  -p 6080:6080 \
   -v webvirtmgr-data:/data \
-  -v "$LIBVIRTD_SOCK":/var/run/libvirt/libvirt-sock \
-  -e GID_LIBVIRTD="$(stat -c %g $LIBVIRTD_SOCK)" \
+  -v /var/run/libvirt/libvirt-sock:/var/run/libvirt/libvirt-sock \
   --name webvirtmgr \
   flexible1983/webvirtmgr-docker
 ```
 
-## Container configuration
-
-### libvirtd Group-ID
-**Name:** `GID_LIBVIRTD`  
-**Type:** Integer  
-**Default:** Unset  
-**Example:** `-e GID_LIBVIRTD=108`
-
-This added the docker user in the container to a group with this id.  
-Should be group id of libvirt-sock.  
-You can use this helper  `-e GID_LIBVIRTD="$(stat -c %g /path/to/libvirt-sock)"`.
+Create an admin user if running with new volume.
+```
+$ docker exec -ti webvirtmgr /webvirtmgr/manage.py createsuperuser
+```
 
 ## libvirtd configuration on the host
 
@@ -56,7 +47,7 @@ No special changes are necessary.
 
 ### SSH connection
 
-Follow official (Setup-SSH-Authorization)[https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization] 
+Follow official [Setup-SSH-Authorization](https://github.com/retspen/webvirtmgr/wiki/Setup-SSH-Authorization) 
 guide and put the resulting `.ssh` directory in your data volume.
 
 ```
