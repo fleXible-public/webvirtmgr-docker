@@ -25,7 +25,7 @@ RUN python -m pip install -U pip && \
 
 WORKDIR /webvirtmgr
 
-# create and activate virtual environment
+# Create and activate virtual environment
 RUN virtualenv -q --system-site-packages --no-periodic-update venv
 ENV PATH="/webvirtmgr/venv/bin:$PATH"
 
@@ -51,6 +51,7 @@ ENV DEBIAN_FRONTEND="noninteractive" TERM="linux" TZ="Europe/Berlin" \
 # Install dependencies
 RUN apt-get update && \
   apt-get install -qqy --no-install-recommends --no-install-suggests \
+    openssh-client \
     python-libvirt \
     python-libxml2 \
     supervisor \
@@ -63,11 +64,10 @@ ADD supervisor.webvirtmgr.conf /etc/supervisor/conf.d/webvirtmgr.conf
 ADD bootstrap.sh /bootstrap.sh
 
 # Create user
-RUN useradd webvirtmgr -u 1010 -g nogroup -d /webvirtmgr -s /sbin/nologin
+RUN useradd webvirtmgr -u 1010 -g nogroup -d /data -s /sbin/nologin
 
+# Pull prepared webvirtmgr installation and activate virtual environment
 COPY --from=builder-image --chown=webvirtmgr:nogroup /webvirtmgr /webvirtmgr
-
-# activate virtual environment
 ENV PATH="/webvirtmgr/venv/bin:$PATH" VIRTUAL_ENV="/webvirtmgr/venv"
 
 COPY --from=builder-image --chown=webvirtmgr:nogroup /data /data
