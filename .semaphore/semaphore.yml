@@ -1,0 +1,31 @@
+version: v1.0
+name: Docker
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+fail_fast:
+  stop:
+    when: 'true'
+blocks:
+  - name: Build
+    task:
+      jobs:
+        - name: docker build
+          commands:
+            - checkout
+            - 'docker pull "${DOCKER_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}" || true'
+            - 'docker build --cache-from "${DOCKER_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}" -t webvirtmgr-docker:updated .'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKER_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}"'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKER_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_SHA}"'
+            - 'docker push --quiet --all-tags "${DOCKER_USERNAME}/webvirtmgr-docker"'
+      secrets:
+        - name: dockerhub-secrets
+      prologue:
+        commands:
+          - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
+promotions:
+  - name: Publish on DockerHub
+    pipeline_file: pipeline_2.yml
+    auto_promote:
+      when: branch = 'master' AND result = 'passed'

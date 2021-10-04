@@ -1,0 +1,34 @@
+version: v1.0
+name: DockerHub
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Publish
+    task:
+      jobs:
+        - name: docker tag
+          commands:
+            - echo 'Publishing to DockerHub!'
+        - name: docker push
+          commands:
+            - echo 'Keep it coming!'
+      secrets:
+        - name: dockerhub-secrets
+      prologue:
+        commands:
+          - 'echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin'
+    run:
+      when: branch = 'set-up-semaphore'
+  - name: Readme
+    task:
+      secrets:
+        - name: dockerhub-secrets
+      jobs:
+        - name: Update Readme
+          commands:
+            - checkout
+            - 'echo "DOCKER_USER=${DOCKER_USERNAME}" > secrets'
+            - 'echo "DOCKER_PASS=${DOCKER_PASSWORD}" >> secrets'
+            - 'docker run --rm -t -v $(pwd):/myvol --env-file secrets -e PUSHRM_FILE=/myvol/README.md chko/docker-pushrm:1 --debug "${DOCKER_USERNAME}/webvirtmgr-docker"'
