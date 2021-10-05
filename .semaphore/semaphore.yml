@@ -1,0 +1,78 @@
+version: v1.0
+name: Docker
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+fail_fast:
+  stop:
+    when: 'true'
+blocks:
+  - name: Code Quality
+    task:
+      jobs:
+        - name: hadolint
+          commands:
+            - docker run --rm -i ghcr.io/hadolint/hadolint < Dockerfile || true
+        - name: shellcheck
+          commands:
+            - shellcheck *.sh
+      prologue:
+        commands:
+          - checkout
+    dependencies: []
+  - name: Build
+    task:
+      jobs:
+        - name: docker build
+          commands:
+            - 'echo ${SEMAPHORE_GIT_SHA:0:8}'
+            - 'docker pull --quiet "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}" || true'
+            - 'docker build --cache-from "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}" -t webvirtmgr-docker:updated .'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_BRANCH}"'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${SEMAPHORE_GIT_SHA:0:8}"'
+            - 'docker push --quiet --all-tags "${DOCKERHUB_USERNAME}/webvirtmgr-docker"'
+      secrets:
+        - name: dockerhub-secrets
+      prologue:
+        commands:
+          - checkout
+          - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
+    dependencies:
+      - Code Quality
+      - Git
+      - Pipeline
+    run:
+      when: pull_request =~ '.*'
+  - name: Git
+    run:
+      when: pull_request =~ '.*'
+    dependencies: []
+    task:
+      jobs:
+        - name: Commit Infos
+          commands:
+            - export | grep SEMAPHORE_GIT
+            - echo "SEMAPHORE_GIT_REF_TYPE=$SEMAPHORE_GIT_REF_TYPE"
+            - echo "SEMAPHORE_GIT_PR_SHA=$SEMAPHORE_GIT_PR_SHA"
+            - echo "SEMAPHORE_GIT_PR_SLUG=$SEMAPHORE_GIT_PR_SLUG"
+  - name: Pipeline
+    task:
+      jobs:
+        - name: Env-vars
+          commands:
+            - export | grep SEMAPHORE_
+    dependencies: []
+promotions:
+  - name: Publish on DockerHub
+    pipeline_file: pipeline_2.yml
+    auto_promote:
+      when: branch = 'master' AND result = 'passed'
+  - name: Debug
+    pipeline_file: pipeline_3.yml
+    auto_promote:
+      when: result = 'passed'
+  - name: Deploy to Staging
+    pipeline_file: pipeline_4.yml
+    auto_promote:
+      when: pull_request =~ '.*' AND result = 'passed'
