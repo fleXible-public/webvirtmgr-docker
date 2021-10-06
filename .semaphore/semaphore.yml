@@ -54,16 +54,17 @@ blocks:
           commands:
             - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > commit.env'
         - name: Branch name for docker
-          commands: |
-            sem-version ruby 2.7
-            ruby <<EOF > branch.env
-              str="$SEMAPHORE_GIT_URL"
-              key="GIT_PR_BRANCH_SLUG"
-              val=str.downcase
-                .gsub(/[^a-z0-9]/, '-')[0..62]
-                .gsub(/(\A-+|-+\z)/, '')
-              puts "#{key}=#{val}"
-            EOF
+          commands:
+            - sem-version ruby 2.7
+            - |
+              ruby <<EOF > branch.env
+                str="$SEMAPHORE_GIT_URL"
+                key="GIT_PR_BRANCH_SLUG"
+                val=str.downcase
+                      .gsub(/[^a-z0-9]/, '-')[0..62]
+                      .gsub(/(\A-+|-+\z)/, '')
+                puts "#{key}=#{val}"
+              EOF
       epilogue:
         always:
           commands:
