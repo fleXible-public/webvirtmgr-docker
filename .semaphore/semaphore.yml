@@ -52,24 +52,14 @@ blocks:
       jobs:
         - name: Short commit SHA
           commands:
-            - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > commit.env'
-        - name: Branch name for docker
-          commands:
-            - sem-version ruby 2.7
-            - |
-              ruby <<EOF > branch.env
-                str="$SEMAPHORE_GIT_URL"
-                key="GIT_PR_BRANCH_SLUG"
-                val=str.downcase
-                      .gsub(/[^a-z0-9]/, '-')[0..62]
-                      .gsub(/(\A-+|-+\z)/, '')
-                puts "#{key}=#{val}"
-              EOF
+            - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > gitinfo_docker.env'
+            - echo -n "GIT_PR_BRANCH_SLUG=" > gitinfo_docker.env
+            - 'echo "$SEMAPHORE_GIT_URL" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' > gitinfo_docker.env'
+            - ls -la
       epilogue:
-        always:
+        on_pass:
           commands:
-            - cat commit.env branch.env > git_docker.env
-            - artifact push job --expire-in 1w git_docker.env
+            - artifact push job --expire-in 1w gitinfo_docker.env
 promotions:
   - name: Publish on DockerHub
     pipeline_file: pipeline_2.yml
