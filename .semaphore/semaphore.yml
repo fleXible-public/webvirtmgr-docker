@@ -26,7 +26,7 @@ blocks:
       jobs:
         - name: docker build
           commands:
-            - source git_docker.env
+            - source gitinfo_docker.env
             - 'docker pull --quiet "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" || true'
             - 'docker build --cache-from "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" -t webvirtmgr-docker:updated .'
             - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}"'
@@ -38,7 +38,7 @@ blocks:
         commands:
           - checkout
           - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
-          - artifact pull job git_docker.env
+          - artifact pull job gitinfo_docker.env
     dependencies:
       - Code Quality
       - Git
@@ -55,7 +55,6 @@ blocks:
             - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > gitinfo_docker.env'
             - echo -n "GIT_PR_BRANCH_SLUG=" > gitinfo_docker.env
             - 'echo "$SEMAPHORE_GIT_URL" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' > gitinfo_docker.env'
-            - ls -la
       epilogue:
         on_pass:
           commands:
