@@ -1,0 +1,74 @@
+version: v1.0
+name: Docker
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+fail_fast:
+  stop:
+    when: 'true'
+blocks:
+  - name: Code Quality
+    task:
+      jobs:
+        - name: hadolint
+          commands:
+            - docker run --rm -i ghcr.io/hadolint/hadolint < Dockerfile || true
+        - name: shellcheck
+          commands:
+            - shellcheck *.sh
+      prologue:
+        commands:
+          - checkout
+    dependencies: []
+  - name: Build
+    task:
+      jobs:
+        - name: docker build
+          commands:
+            - source gitinfo_docker.env
+            - 'docker pull --quiet "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" || true'
+            - 'docker build --cache-from "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" -t webvirtmgr-docker:updated .'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}"'
+            - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_SHA_SHORT}"'
+            - 'docker push --quiet --all-tags "${DOCKERHUB_USERNAME}/webvirtmgr-docker"'
+      secrets:
+        - name: dockerhub-secrets
+      prologue:
+        commands:
+          - checkout
+          - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
+          - artifact pull workflow gitinfo_docker.env
+    dependencies:
+      - Code Quality
+      - Git
+    run:
+      when: pull_request =~ '.*'
+  - name: Git
+    run:
+      when: pull_request =~ '.*'
+    dependencies: []
+    task:
+      jobs:
+        - name: Short commit SHA
+          commands:
+            - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > gitinfo_docker.env'
+            - echo -n "GIT_PR_BRANCH_SLUG=" > gitinfo_docker.env
+            - 'echo "$SEMAPHORE_GIT_URL" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' > gitinfo_docker.env'
+      epilogue:
+        on_pass:
+          commands:
+            - artifact push workflow --expire-in 1w gitinfo_docker.env
+promotions:
+  - name: Publish on DockerHub
+    pipeline_file: pipeline_2.yml
+    auto_promote:
+      when: branch = 'master' AND result = 'passed'
+  - name: Debug
+    pipeline_file: pipeline_3.yml
+    auto_promote:
+      when: result = 'passed'
+  - name: Deploy to Staging
+    pipeline_file: pipeline_4.yml
+    auto_promote:
+      when: pull_request =~ '.*' AND result = 'passed'
