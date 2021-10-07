@@ -21,6 +21,8 @@ blocks:
         commands:
           - checkout
     dependencies: []
+    skip:
+      when: 'true'
   - name: Build
     task:
       jobs:
@@ -53,8 +55,8 @@ blocks:
         - name: Short commit SHA
           commands:
             - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > gitinfo_docker.env'
-            - echo -n "GIT_PR_BRANCH_SLUG=" > gitinfo_docker.env
-            - 'echo "$SEMAPHORE_GIT_URL" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' > gitinfo_docker.env'
+            - echo -n "GIT_PR_BRANCH_SLUG=" >> gitinfo_docker.env
+            - 'echo "$SEMAPHORE_GIT_PR_BRANCH" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' >> gitinfo_docker.env'
       epilogue:
         on_pass:
           commands:
@@ -67,7 +69,7 @@ promotions:
   - name: Debug
     pipeline_file: pipeline_3.yml
     auto_promote:
-      when: result = 'passed'
+      when: branch =~ '.*' AND result = 'passed'
   - name: Deploy to Staging
     pipeline_file: pipeline_4.yml
     auto_promote:
