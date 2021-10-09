@@ -53,11 +53,11 @@ blocks:
     dependencies: []
     task:
       jobs:
-        - name: Short commit SHA
+        - name: commit infos
           commands:
-            - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_SHA:0:8}" > gitinfo_docker.env'
+            - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_PR_SHA:0:8}" > gitinfo_docker.env'
             - echo -n "GIT_PR_BRANCH_SLUG=" >> gitinfo_docker.env
-            - 'echo "$SEMAPHORE_GIT_PR_BRANCH" | ruby -pe ''$_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' >> gitinfo_docker.env'
+            - 'echo -n "$SEMAPHORE_GIT_PR_BRANCH" | ruby -ne ''puts $_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' >> gitinfo_docker.env'
             - cat gitinfo_docker.env
       epilogue:
         on_pass:
