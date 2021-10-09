@@ -28,12 +28,10 @@ blocks:
       jobs:
         - name: docker build
           commands:
-            - cat gitinfo_docker.env
             - source gitinfo_docker.env
             - 'docker pull --quiet "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" || true'
             - 'docker build --cache-from "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}" -t webvirtmgr-docker:updated .'
             - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_PR_BRANCH_SLUG}"'
-            - 'docker tag webvirtmgr-docker:updated "${DOCKERHUB_USERNAME}/webvirtmgr-docker:${GIT_SHA_SHORT}"'
             - 'docker push --quiet --all-tags "${DOCKERHUB_USERNAME}/webvirtmgr-docker"'
       secrets:
         - name: dockerhub-secrets
@@ -49,7 +47,7 @@ blocks:
       when: pull_request =~ '.*'
   - name: Git
     run:
-      when: pull_request =~ '.*'
+      when: pull_request =~ '.*' OR branch = 'master'
     dependencies: []
     task:
       jobs:
@@ -58,7 +56,6 @@ blocks:
             - 'echo "GIT_SHA_SHORT=${SEMAPHORE_GIT_PR_SHA:0:8}" > gitinfo_docker.env'
             - echo -n "GIT_PR_BRANCH_SLUG=" >> gitinfo_docker.env
             - 'echo -n "$SEMAPHORE_GIT_PR_BRANCH" | ruby -ne ''puts $_.downcase.gsub(/[^a-z0-9]/, "-")[0..62].gsub(/(\A-+|-+\z)/, "")'' >> gitinfo_docker.env'
-            - cat gitinfo_docker.env
       epilogue:
         on_pass:
           commands:
@@ -71,7 +68,7 @@ promotions:
   - name: Debug
     pipeline_file: pipeline_3.yml
     auto_promote:
-      when: branch =~ '.*' AND result = 'passed'
+      when: (pull_request =~ '.*' OR branch = 'master') AND result = 'passed'
   - name: Deploy to Staging
     pipeline_file: pipeline_4.yml
     auto_promote:

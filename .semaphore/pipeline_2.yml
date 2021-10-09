@@ -8,17 +8,16 @@ blocks:
   - name: Publish
     task:
       jobs:
-        - name: docker tag
+        - name: docker tag and push
           commands:
             - echo 'Publishing to DockerHub!'
-        - name: docker push
-          commands:
-            - echo 'Keep it coming!'
+            - cat gitinfo_docker.env
       secrets:
         - name: dockerhub-secrets
       prologue:
         commands:
           - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
+          - artifact pull workflow gitinfo_docker.env
   - name: Readme
     task:
       secrets:
