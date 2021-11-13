@@ -11,3 +11,7 @@ blocks:
         - name: Env-vars
           commands:
             - export | grep SEMAPHORE_
+        - name: Commit infos
+          commands:
+            - artifact pull workflow gitinfo_docker.env
+            - cat gitinfo_docker.env
