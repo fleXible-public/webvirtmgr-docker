@@ -92,6 +92,35 @@ blocks:
             - docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=100m webvirtmgr-data
             - 'docker run -d -p 8080:8080 -p 6080:6080 -v webvirtmgr-data:/data --name webvirtmgr "${DOCKERHUB_USERNAME}/webvirtmgr-docker:commit-${GIT_SHA_SHORT}"'
             - docker exec -ti --user=webvirtmgr webvirtmgr /webvirtmgr/manage.py test
+  - name: Security
+    dependencies:
+      - Build
+      - Code Quality
+    task:
+      secrets:
+        - name: snyk
+      prologue:
+        commands:
+          - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
+          - artifact pull workflow gitinfo_docker.env && source gitinfo_docker.env
+      agent:
+        machine:
+          type: e1-standard-2
+          os_image: ubuntu1804
+        containers:
+          - name: main
+            image: 'snyk/snyk:docker'
+            env_vars:
+              - name: SNYK_INTEGRATION_NAME
+                value: GITHUB_ACTIONS
+              - name: SNYK_INTEGRATION_VERSION
+                value: docker
+              - name: SNYK_TOKEN
+                value: '${SNYK_TOKEN}'
+      jobs:
+        - name: snyk test
+          commands:
+            - 'snyk test --severity-threshold=high --docker "${DOCKERHUB_USERNAME}/webvirtmgr-docker:commit-${GIT_SHA_SHORT}"'
 promotions:
   - name: Publish on DockerHub
     pipeline_file: pipeline_2.yml
