@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 
 # Install dependencies
 RUN apt-get update && \
+  apt-get upgrade -qy && \
   apt-get install -qqy --no-install-recommends --no-install-suggests \
     gzip \
     tar \
@@ -50,6 +51,7 @@ ENV DEBIAN_FRONTEND="noninteractive" TERM="linux" TZ="Europe/Berlin" \
 
 # Install dependencies
 RUN apt-get update && \
+  apt-get upgrade -qy && \
   apt-get install -qqy --no-install-recommends --no-install-suggests \
     openssh-client \
     python-libvirt \
