@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 
 # Install dependencies
 RUN apt-get update && \
+  apt-get upgrade -qy && \
   apt-get install -qqy --no-install-recommends --no-install-suggests \
     gzip \
     tar \
@@ -42,6 +43,8 @@ RUN sed -i 's/0.0.0.0/127.0.0.1/g' vrtManager/create.py && \
   ./manage.py collectstatic --noinput && \
   ./manage.py syncdb --noinput
 
+COPY --from=snyk/snyk:linux /usr/local/bin/snyk /usr/local/bin/snyk
+
 
 FROM ubuntu:18.04 AS runner-image
 
@@ -50,6 +53,7 @@ ENV DEBIAN_FRONTEND="noninteractive" TERM="linux" TZ="Europe/Berlin" \
 
 # Install dependencies
 RUN apt-get update && \
+  apt-get upgrade -qy && \
   apt-get install -qqy --no-install-recommends --no-install-suggests \
     openssh-client \
     python-libvirt \
