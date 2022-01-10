@@ -34,6 +34,8 @@ ENV PATH="/webvirtmgr/venv/bin:$PATH"
 ADD local_settings.py ./webvirtmgr/local/local_settings.py
 RUN wget -q https://github.com/retspen/webvirtmgr/releases/download/v4.8.9/webvirtmgr.tar.gz -O /tmp/webvirtmgr.tar.gz && \
   tar --strip-components=1 -xzf /tmp/webvirtmgr.tar.gz && \
+  sed -i 's/django==1.5.5/django==1.5.6/g' requirements.txt && \
+  sed -i 's/gunicorn==19.5.0/gunicorn==19.10.0/g' requirements.txt && \
   pip install -r requirements.txt
 
 RUN sed -i 's/0.0.0.0/127.0.0.1/g' vrtManager/create.py && \
