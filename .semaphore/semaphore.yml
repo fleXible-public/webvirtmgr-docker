@@ -98,6 +98,7 @@ blocks:
       - Code Quality
     task:
       secrets:
+        - name: dockerhub-secrets
         - name: snyk
       prologue:
         commands:
@@ -115,11 +116,10 @@ blocks:
                 value: GITHUB_ACTIONS
               - name: SNYK_INTEGRATION_VERSION
                 value: docker
-              - name: SNYK_TOKEN
-                value: '${SNYK_TOKEN}'
       jobs:
         - name: snyk test
           commands:
+            - 'export SNYK_TOKEN="${SNYK_TOKEN}"'
             - 'snyk test --severity-threshold=high --docker "${DOCKERHUB_USERNAME}/webvirtmgr-docker:commit-${GIT_SHA_SHORT}"'
 promotions:
   - name: Publish on DockerHub
