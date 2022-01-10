@@ -77,19 +77,26 @@ blocks:
     task:
       secrets:
         - name: dockerhub-secrets
+        - name: snyk
+      env_vars:
+        - name: SNYK_TOKEN
+          value: "${SNYK_TOKEN}"
       prologue:
         commands:
           - 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
           - artifact pull workflow gitinfo_docker.env && source gitinfo_docker.env
+          - docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=100m webvirtmgr-data
       epilogue:
         always:
           commands:
             - docker rm --force --volumes webvirtmgr || true
             - docker volume rm webvirtmgr-data
       jobs:
-        - name: docker run
+        - name: docker run (snyk builder-image)
           commands:
-            - docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=100m webvirtmgr-data
+            - 'docker run --rm -e SNYK_TOKEN -v webvirtmgr-data:/data -v $PWD:/app --name webvirtmgr "${DOCKERHUB_USERNAME}/webvirtmgr-docker:cache-${GIT_BRANCH_SLUG}" snyk test --severity-threshold=high'
+        - name: docker run (runner-image)
+          commands:
             - 'docker run -d -p 8080:8080 -p 6080:6080 -v webvirtmgr-data:/data --name webvirtmgr "${DOCKERHUB_USERNAME}/webvirtmgr-docker:commit-${GIT_SHA_SHORT}"'
             - docker exec -ti --user=webvirtmgr webvirtmgr /webvirtmgr/manage.py test
 promotions:
