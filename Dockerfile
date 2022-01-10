@@ -43,6 +43,8 @@ RUN sed -i 's/0.0.0.0/127.0.0.1/g' vrtManager/create.py && \
   ./manage.py collectstatic --noinput && \
   ./manage.py syncdb --noinput
 
+COPY --from=snyk/snyk:linux /usr/local/bin/snyk /usr/local/bin/snyk
+
 
 FROM ubuntu:18.04 AS runner-image
 
